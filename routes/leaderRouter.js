@@ -1,18 +1,22 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+
+const Leaders = require('../models/leaders')
 
 const leaderRouter = express.Router();
 leaderRouter.use(bodyParser.json());
 
 /***************LEADERS***************/
 leaderRouter.route('/')
-    .all((req, res, next) => {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'text/plain');
-        next()
-    })
     .get((req, res, next) => {
-        res.end('will send all leaders ')
+        Leaders.find({})
+            .then((leaders) => {
+                res.statusCode = 200;
+                res.setHeader('Content-type', 'application/json');
+                res.json(leaders);
+            }, (err) => next(err))
+            .catch((err) => next(err));
     })
     .post((req, res, next) => {
         res.end('will send all leaders: ' + req.body.name + ' with details: ' + req.body.description);
