@@ -33,14 +33,20 @@ dishRouter.route('/')
             res.statusCode = 403;
             res.end('PUT operation not supported on/dishes');
       })
-      .delete(authenticate.verifyUser, (req, res, next) => {
-            Dishes.remove({})
-                  .then((resp) => {
-                        res.statusCode = 200;
-                        res.setHeader('Content-type', 'application/json');
-                        res.json(resp);
-                  }, (err) => next(err))
-                  .catch((err) => next(err));
+      .delete(authenticate.verifyAdmin, (req, res, next) => {
+            if (req.user.admin) {
+                  Dishes.remove({})
+                        .then((resp) => {
+                              res.statusCode = 200;
+                              res.setHeader('Content-type', 'application/json');
+                              res.json(resp);
+                        }, (err) => next(err))
+                        .catch((err) => next(err));
+            } else {
+                  err = new Error('Not Authorized :: not admin')
+                  err.status = 404;
+                  return next(err)
+            }
       });
 
 /***************DISH ID***************/
