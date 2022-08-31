@@ -12,12 +12,12 @@ passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 exports.getToken = (user) => {
-      return jwt.sign(user, config.secreteKey, { expireIn: 3600 })
+      return jwt.sign(user, config.secretKey, { expiresIn: 3600 })
 }
 
 var opts = {};
 opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
-opts.secretOrKey = config.secreteKey;
+opts.secretOrKey = config.secretKey;
 
 exports.jwtPassport = passport.use(new JwtStrategy(opts, (jwt_payload, done) => {
       console.log("JWT Payload", jwt_payload);

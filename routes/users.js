@@ -2,10 +2,12 @@ var express = require("express");
 const bodyParser = require("body-parser");
 var User = require("../models/user");
 var passport = require('passport');
-var authenticate = require('./authenticate');
+var authenticate = require('../authenticate');
 
 var router = express.Router();
 router.use(bodyParser.json());
+
+console.log("****inside users route*******")
 
 /* GET users listing. */
 router.get("/", function(req, res, next) {
@@ -37,7 +39,7 @@ router.post("/login", passport.authenticate('local'), (req, res) => {
       res.json({ success: true, token: token, status: "Login successful" });
 });
 
-router.get('/logout', (req, res) => {
+router.get('/logout', (req, res, next) => {
       if (req.session) {
             req.session.destroy();
             res.clearCookie('session-id');
