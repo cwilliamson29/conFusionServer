@@ -7,11 +7,23 @@ var authenticate = require('../authenticate');
 var router = express.Router();
 router.use(bodyParser.json());
 
-console.log("****inside users route*******")
+
 
 /* GET users listing. */
-router.get("/", function(req, res, next) {
-      res.send("respond with a resource");
+router.get("/", authenticate.verifyAdmin, (req, res, next) => {
+      if (req.user.admin) {
+            User.find({})
+                  .then((user) => {
+                        res.statusCode = 200;
+                        res.setHeader('Content-type', 'application/json');
+                        res.json(user);
+                  }, (err) => next(err))
+                  .catch((err) => next(err));
+      } else {
+            err = new Error('Not Authorized :: not admin')
+            err.status = 404;
+            return next(err)
+      }
 });
 
 router.post("/signup", (req, res, next) => {

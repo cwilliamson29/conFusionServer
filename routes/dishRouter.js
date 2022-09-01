@@ -20,14 +20,20 @@ dishRouter.route('/')
                   }, (err) => next(err))
                   .catch((err) => next(err));
       })
-      .post(authenticate.verifyUser, (req, res, next) => {
-            Dishes.create(req.body)
-                  .then((dish) => {
-                        res.statusCode = 200;
-                        res.setHeader('Content-type', 'application/json');
-                        res.json(dish);
-                  }, (err) => next(err))
-                  .catch((err) => next(err));
+      .post(authenticate.verifyAdmin, (req, res, next) => {
+            if (req.user.admin) {
+                  Dishes.create(req.body)
+                        .then((dish) => {
+                              res.statusCode = 200;
+                              res.setHeader('Content-type', 'application/json');
+                              res.json(dish);
+                        }, (err) => next(err))
+                        .catch((err) => next(err));
+            } else {
+                  err = new Error('Not Authorized :: not admin')
+                  err.status = 404;
+                  return next(err)
+            }
       })
       .put(authenticate.verifyUser, (req, res, next) => {
             res.statusCode = 403;
@@ -65,27 +71,39 @@ dishRouter.route('/:dishId')
             res.statusCode = 403;
             res.end('POST operation not supported on /:dishId');
       })
-      .put(authenticate.verifyUser, (req, res, next) => {
-            Dishes.findByIdAndUpdate(req.params.dishId, {
-                        $set: req.body
-                  }, {
-                        new: true
-                  })
-                  .then((resp) => {
-                        res.StatusCode = 200;
-                        res.setHeader('Content-type', 'application/json');
-                        res.json(resp);
-                  }, (err) => next(err))
-                  .catch((err) => next(err));
+      .put(authenticate.verifyAdmin, (req, res, next) => {
+            if (req.user.admin) {
+                  Dishes.findByIdAndUpdate(req.params.dishId, {
+                              $set: req.body
+                        }, {
+                              new: true
+                        })
+                        .then((resp) => {
+                              res.StatusCode = 200;
+                              res.setHeader('Content-type', 'application/json');
+                              res.json(resp);
+                        }, (err) => next(err))
+                        .catch((err) => next(err));
+            } else {
+                  err = new Error('Not Authorized :: not admin')
+                  err.status = 404;
+                  return next(err)
+            }
       })
-      .delete(authenticate.verifyUser, (req, res, next) => {
-            Dishes.findByIdAndRemove(req.params.dishId)
-                  .then((resp) => {
-                        res.StatusCode = 200;
-                        res.setHeader('Content-type', 'application/json');
-                        res.json(resp);
-                  }, (err) => next(err))
-                  .catch((err) => next(err));
+      .delete(authenticate.verifyAdmin, (req, res, next) => {
+            if (req.user.admin) {
+                  Dishes.findByIdAndRemove(req.params.dishId)
+                        .then((resp) => {
+                              res.StatusCode = 200;
+                              res.setHeader('Content-type', 'application/json');
+                              res.json(resp);
+                        }, (err) => next(err))
+                        .catch((err) => next(err));
+            } else {
+                  err = new Error('Not Authorized :: not admin')
+                  err.status = 404;
+                  return next(err)
+            }
       });
 
 /***************COMMENTS***************/
@@ -136,29 +154,35 @@ dishRouter.route('/:dishId/comments')
             res.statusCode = 403;
             res.end('PUT operation not supported on /comment');
       })
-      .delete(authenticate.verifyUser, (req, res, next) => {
-            Dishes.findById(req.params.dishId)
-                  .then((dish) => {
-                        if (dish != null) {
+      .delete(authenticate.verifyAdmin, (req, res, next) => {
+            if (req.user.admin || req.user._id) {
+                  Dishes.findById(req.params.dishId)
+                        .then((dish) => {
+                              if (dish != null) {
 
-                              for (var i = (dish.comments.length - 1); i >= 0; i--) {
-                                    dish.comments.id(dish.comments[i].remove())
+                                    for (var i = (dish.comments.length - 1); i >= 0; i--) {
+                                          dish.comments.id(dish.comments[i].remove())
+                                    }
+
+                                    dish.save()
+                                          .then((dish) => {
+                                                res.statusCode = 200;
+                                                res.setHeader('Content-type', 'application/json');
+                                                res.json(dish);
+                                          }, (err) => next(err));
+
+                              } else {
+                                    err = new Error('Dish ' + req.params.dishId + ' not found')
+                                    err.status = 404;
+                                    return next(err)
                               }
-
-                              dish.save()
-                                    .then((dish) => {
-                                          res.statusCode = 200;
-                                          res.setHeader('Content-type', 'application/json');
-                                          res.json(dish);
-                                    }, (err) => next(err));
-
-                        } else {
-                              err = new Error('Dish ' + req.params.dishId + ' not found')
-                              err.status = 404;
-                              return next(err)
-                        }
-                  }, (err) => next(err))
-                  .catch((err) => next(err));
+                        }, (err) => next(err))
+                        .catch((err) => next(err));
+            } else {
+                  err = new Error('Not Authorized :: not admin')
+                  err.status = 404;
+                  return next(err)
+            }
       });
 
 /***************COMMENTS ID***************/
@@ -192,32 +216,41 @@ dishRouter.route('/:dishId/comments/:commentId')
       .put(authenticate.verifyUser, (req, res, next) => {
             Dishes.findById(req.params.dishId)
                   .then((dish) => {
-                        if (dish != null && dish.comments.id(req.params.commentId) != null) {
-                              if (req.body.rating) {
-                                    dish.comments.id(req.params.commentId).rating = req.body.rating;
 
+                        console.log("***user*** -", dish.comments.id(req.params.commentId).author, "***user needed*** -", req.user._id)
+
+                        if (dish.comments.id(req.params.commentId).author === req.user._id) {
+                              if (dish != null && dish.comments.id(req.params.commentId) != null) {
+                                    if (req.body.rating) {
+                                          dish.comments.id(req.params.commentId).rating = req.body.rating;
+
+                                    }
+                                    if (req.body.comment) {
+                                          dish.comments.id(req.params.commentId).comment = req.body.comment;
+                                    }
+                                    dish.save()
+                                          .then((dish) => {
+                                                Dishes.findById(dish._id)
+                                                      .populate('comments.author')
+                                                      .then((dish) => {
+                                                            res.statusCode = 200;
+                                                            res.setHeader('Content-type', 'application/json');
+                                                            res.json(dish);
+                                                      })
+
+                                          }, (err) => next(err));
+
+                              } else if (dish == null) {
+                                    err = new Error('Comment ' + req.params.dishId + ' not found')
+                                    err.status = 404;
+                                    return next(err)
+                              } else {
+                                    err = new Error('Comment ' + req.params.commentId + ' not found')
+                                    err.status = 404;
+                                    return next(err)
                               }
-                              if (req.body.comment) {
-                                    dish.comments.id(req.params.commentId).comment = req.body.comment;
-                              }
-                              dish.save()
-                                    .then((dish) => {
-                                          Dishes.findById(dish._id)
-                                                .populate('comments.author')
-                                                .then((dish) => {
-                                                      res.statusCode = 200;
-                                                      res.setHeader('Content-type', 'application/json');
-                                                      res.json(dish);
-                                                })
-
-                                    }, (err) => next(err));
-
-                        } else if (dish == null) {
-                              err = new Error('Comment ' + req.params.dishId + ' not found')
-                              err.status = 404;
-                              return next(err)
                         } else {
-                              err = new Error('Comment ' + req.params.commentId + ' not found')
+                              err = new Error('user not found')
                               err.status = 404;
                               return next(err)
                         }
