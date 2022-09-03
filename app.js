@@ -15,6 +15,7 @@ var dishRouter = require("./routes/dishRouter");
 var promoRouter = require("./routes/promoRouter");
 var leaderRouter = require("./routes/leaderRouter");
 var uploadRouter = require("./routes/uploadRouter");
+var favoritesRouter = require('./routes/favoritesRouter');
 
 
 const mongoose = require("mongoose");
@@ -26,7 +27,7 @@ const connect = mongoose.connect(url);
 
 connect.then(
       (db) => {
-            console.log("Connected to server\n*****************");
+            console.log("Connected to server\n*******************");
       },
       (err) => {
             console.log(err);
@@ -59,6 +60,7 @@ app.use("/dishes", dishRouter);
 app.use("/promotions", promoRouter);
 app.use("/leaders", leaderRouter);
 app.use("/imageUpload", uploadRouter);
+app.use("/favorites", favoritesRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -74,6 +76,11 @@ app.use(function(err, req, res, next) {
       // render the error page
       res.status(err.status || 500);
       res.render("error");
+});
+process.on('SIGINT', function() {
+      console.log("\nGracefully shutting down from SIGINT (Ctrl-C)");
+      // some other closing procedures go here
+      process.exit(0);
 });
 
 module.exports = app;
