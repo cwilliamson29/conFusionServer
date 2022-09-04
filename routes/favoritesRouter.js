@@ -22,47 +22,84 @@ favoritesRouter.route('/')
                   }, (err) => next(err))
                   .catch((err) => next(err));
       });
+
+
+/*********FAVORITES DISHID**********/
 favoritesRouter.route('/:dishId')
       .all(authenticate.verifyUser)
       .post((req, res, next) => {
-            console.log(req.user._id)
-            Favorites.find({ 'user': req.user._id })
-                  .then((favs) => {
-                        req.body.user = req.user._id;
+            Favorites.findById(req.user._id)
+                  .then((user) => {
+                        if (user != null) {
+                              Favorites.findByIdAndUpdate(req.user._id, { $addToSet: { dishes: req.params.dishId } })
+                                    .then((resp) => {
+                                          res.StatusCode = 200;
+                                          res.setHeader('Content-type', 'application/json');
+                                          res.json(resp);
+                                    }, (err) => next(err))
 
-                        if (favs.length) {
-                              //check if dish is already in list
-                              let compare = Favorites.find({ 'dishes': req.params.dishId })
-                              //var compareString = JSON.stringify(compare)
-                              //console.log(compareString + " ****** ")
-                              //if (favs[0].dishes.indexOf(req.body._id) == -1) {
-                              //if (Favorites.find(x => x.dishes === req.params.dishId)) {
-                              if (!Favorites.find(favs.dishes.equals(req.params.dishId))) {
-                                    //if (!Favorites.find().where() {
-                                    favs[0].dishes.push(req.params.dishId)
-                                    res.json(favs);
-                                    favs[0].save(function(err, favs) {
-                                          if (err) throw err;
-                                          res.json(favs);
-                                    });
+                                    .catch((err) => next(err));
+                        } else if (user == null) {
+                              Favorites.create({ "_id": req.user._id, "user": req.user._id })
+                                    .then((resp) => {
+                                          Favorites.findByIdAndUpdate(req.user._id, { $addToSet: { dishes: req.params.dishId } })
+                                                .populate('user')
+                                                .then(() => {
+                                                      Favorites.findById(req.user._id)
+                                                            .populate('dishes')
+                                                            .then((resp) => {
+                                                                  res.StatusCode = 200;
+                                                                  res.setHeader('Content-type', 'application/json');
+                                                                  res.json(resp);
+                                                            }, (err) => next(err))
+                                                })
+                                    }, (err) => next(err));
+                        } else {
+                              err = new Error('Dish ' + req.params.dishId + ' not found')
+                              err.status = 404;
+                              return next(err)
+                        }
+                  }, (err) => next(err))
+                  .catch((err) => {
+                        console.log("did not make it to findById")
+                        next(err)
+                  });
+      })
+
+      .delete((req, res, next) => {
+            let idd = req.params.dishId
+            console.log(req.params.dishId, " **************")
+            Favorites.findById(req.user._id)
+                  .then((user) => {
+                        //var idd = req.params.dishId
+                        //console.log("found a match****", dish);
+                        //console.log("found 2 match****", user.dishes.idd);
+                        for (let i = 0; i <= user.dishes.length; i++) {
+                              console.log("*******inside for*********")
+                              console.log(user.dishes[i])
+                              if (req.params.dishId == user.dishes[i]) {
+                                    console.log("found a match");
+                                    let pos = req.params.dishId
+                                    console.log("********   " + pos)
+                                    user.dishes.splice(pos, 1);
+                                    user.save()
+                                          .then((dish) => {
+                                                res.statusCode = 200;
+                                                res.setHeader('Content-type', 'application/json');
+                                                res.json(dish);
+                                          }, (err) => next(err));
+
                               } else {
-                                    console.log('Already in DB!');
-                                    res.json(favs);
+                                    console.log('no match found')
                               }
+                        }
+                        /*if (req.user._id.equals(user.dishes.id(req.params.dishId))) {
+                              console.log("found a match")
+                        }*/
 
-                        }
-                        //else if user dont exist
-                        else {
-                              Favorites.create({ 'user': req.user._id })
-                                    .then((favs) => {
-                                          favs.dishes.push(req.params.dishId);
-                                          favs.save(function(err, favs) {
-                                                if (err) throw err;
-                                                res.json(favs);
-                                          })
-                                    })
-                                    .catch((err) => { console.log(err) })
-                        }
+                        /* res.StatusCode = 200;
+                         res.setHeader('Content-type', 'application/json');
+                         res.json(resp);*/
                   }, (err) => next(err))
                   .catch((err) => next(err));
       })
