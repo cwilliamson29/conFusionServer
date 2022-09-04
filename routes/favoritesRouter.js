@@ -21,7 +21,27 @@ favoritesRouter.route('/')
                         res.json(favorites);
                   }, (err) => next(err))
                   .catch((err) => next(err));
-      });
+      })
+      .post((req, res, next) => {
+            Favorites.create({ "_id": req.user._id, "user": req.user._id })
+                  .then((resp) => {
+                        res.StatusCode = 200;
+                        res.setHeader('Content-type', 'application/json');
+                        res.json(resp);
+                  }, (err) => next(err))
+
+                  .catch((err) => next(err));
+      })
+      .delete((req, res, next) => {
+            Favorites.findByIdAndRemove(req.user._id)
+                  .then((resp) => {
+                        res.StatusCode = 200;
+                        res.setHeader('Content-type', 'application/json');
+                        res.json(resp);
+                  }, (err) => next(err))
+
+                  .catch((err) => next(err));
+      })
 
 
 /*********FAVORITES DISHID**********/
@@ -67,39 +87,11 @@ favoritesRouter.route('/:dishId')
       })
 
       .delete((req, res, next) => {
-            let idd = req.params.dishId
-            console.log(req.params.dishId, " **************")
-            Favorites.findById(req.user._id)
+            Favorites.findByIdAndUpdate(req.user._id, { $pull: { 'dishes': req.params.dishId } }, (err) => console.log('Dish Removed'))
                   .then((user) => {
-                        //var idd = req.params.dishId
-                        //console.log("found a match****", dish);
-                        //console.log("found 2 match****", user.dishes.idd);
-                        for (let i = 0; i <= user.dishes.length; i++) {
-                              console.log("*******inside for*********")
-                              console.log(user.dishes[i])
-                              if (req.params.dishId == user.dishes[i]) {
-                                    console.log("found a match");
-                                    let pos = req.params.dishId
-                                    console.log("********   " + pos)
-                                    user.dishes.splice(pos, 1);
-                                    user.save()
-                                          .then((dish) => {
-                                                res.statusCode = 200;
-                                                res.setHeader('Content-type', 'application/json');
-                                                res.json(dish);
-                                          }, (err) => next(err));
-
-                              } else {
-                                    console.log('no match found')
-                              }
-                        }
-                        /*if (req.user._id.equals(user.dishes.id(req.params.dishId))) {
-                              console.log("found a match")
-                        }*/
-
-                        /* res.StatusCode = 200;
-                         res.setHeader('Content-type', 'application/json');
-                         res.json(resp);*/
+                        res.StatusCode = 200;
+                        res.setHeader('Content-type', 'application/json');
+                        res.json(user);
                   }, (err) => next(err))
                   .catch((err) => next(err));
       })
