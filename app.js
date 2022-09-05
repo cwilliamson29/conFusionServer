@@ -16,6 +16,7 @@ var promoRouter = require("./routes/promoRouter");
 var leaderRouter = require("./routes/leaderRouter");
 var uploadRouter = require("./routes/uploadRouter");
 var favoritesRouter = require('./routes/favoritesRouter');
+var commentRouter = require('./routes/commentRouter')
 
 
 const mongoose = require("mongoose");
@@ -47,7 +48,6 @@ app.use(
             extended: false,
       })
 );
-//app.use(cookieParser("12345-67890-09876-54321"));
 
 app.use(passport.initialize());
 
@@ -61,6 +61,7 @@ app.use("/promotions", promoRouter);
 app.use("/leaders", leaderRouter);
 app.use("/imageUpload", uploadRouter);
 app.use("/favorites", favoritesRouter);
+app.use("/comments", commentRouter)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
